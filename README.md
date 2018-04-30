@@ -1,10 +1,12 @@
 # INTO Intercultural Mentoring Chef
 
+Sushi Chef script for importing intercultural-mentoring content from http://www.interculturalmentoring.eu/
+
 Kolibri is an open source educational platform to distribute content to areas with
 little or no internet connectivity. Educational content is created and edited on [Kolibri Studio](https://studio.learningequality.org),
 which is a platform for organizing content to import from the Kolibri applications. The purpose
 of this project is to create a *chef*, or a program that scrapes a content source and puts it
-into a format that can be imported into Kolibri Studio. 
+into a format that can be imported into Kolibri Studio.
 
 
 ## Installation
@@ -83,4 +85,3 @@ _Please make sure your final chef matches the following standards._
 1. Is the code compatible with Python 3?
 1. Does the code use common standard library functions where needed?
 1. Does the code use common python idioms where needed (with/open, try/except, etc.)?
-
