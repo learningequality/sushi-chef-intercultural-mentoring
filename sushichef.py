@@ -1,26 +1,49 @@
 #!/usr/bin/env python
+import json
 import os
 import sys
-from ricecooker.utils import downloader, html_writer
+
+from le_utils.constants import licenses as license_constants
 from ricecooker.chefs import SushiChef
 from ricecooker.classes import nodes, files, questions, licenses
 from ricecooker.config import LOGGER              # Use LOGGER to print messages
 from ricecooker.exceptions import raise_for_invalid_channel
-from le_utils.constants import licenses, exercises, content_kinds, file_formats, format_presets, languages
+from ricecooker.utils import downloader, html_writer
 
+# FIXME: Update to use the version in pressurecooker once it gets pushed
+import pdf
 
 # Run constants
 ################################################################################
 CHANNEL_NAME = "INTO Intercultural Mentoring"              # Name of channel
-CHANNEL_SOURCE_ID = "sushi-chef-intercultural-mentoring-en"    # Channel's unique id
+CHANNEL_SOURCE_ID = "sushi-chef-intercultural-mentoring-en-2"    # Channel's unique id
 CHANNEL_DOMAIN = "interculturalmentoring.eu"          # Who is providing the content
 CHANNEL_LANGUAGE = "en"      # Language of channel
-CHANNEL_DESCRIPTION = None                                  # Description of the channel (optional)
-CHANNEL_THUMBNAIL = None                                    # Local path or url to image file (optional)
+CHANNEL_DESCRIPTION = """
+This toolkit for teachers and other professional staff provides instrucions, guidelines and both
+operaonal and methodological proposals for trainers to upskill secondary school teachers to intervene
+through an intercultural mentor when students from abroad, especially new arrivals, have personal or
+academic difficules, or drop out of school.
+"""
+CHANNEL_THUMBNAIL = "into-icon.png"                                    # Local path or url to image file (optional)
 
 # Additional constants
 ################################################################################
+BASE_URL = "http://www.interculturalmentoring.eu/images/Toolkits/"
+JSON_FILE = "page_structure.json"
+CHANNEL_LICENSE = license_constants.SPECIAL_PERMISSIONS  # TODO: Get confirmation on license.
+LICENSE_DESCRIPTION = """
+This material falls under the European Commission's copyright policy. Full details
+on the terms for distribution, editing and re-use can be found here:
+http://ec.europa.eu/ipg/basics/legal/notice_copyright/index_en.htm
+"""
+DOWNLOAD_DIRECTORY = os.path.sep.join([os.path.dirname(os.path.realpath(__file__)), "downloads"])
 
+
+# Helper methods
+def load_json_from_file(json_file):
+    with open(json_file) as json_data:
+        return json.load(json_data)
 
 
 # The chef subclass
@@ -62,8 +85,46 @@ class MyChef(SushiChef):
         """
         channel = self.get_channel(*args, **kwargs)  # Create ChannelNode from data in self.channel_info
 
-        # TODO: Replace next line with chef code
-        raise NotImplementedError("constuct_channel method not implemented yet...")
+        topics = load_json_from_file(JSON_FILE)
+        for topic in topics:
+            book_title = topic['book_title']
+            source_id = book_title.replace(" ", "_")
+            url = topic['path_or_url']
+            topic_node = nodes.TopicNode(source_id=source_id, title=book_title,
+                    tags = [
+                        "Teacher facing",
+                        "Professional development",
+                        "Life skills",
+                        "Intercultural skills",
+                        "Mentorship",
+                        "Formal contexts"
+                    ])
+            channel.add_child(topic_node)
+
+            parser = pdf.PDFParser(url, toc=topic['chapters'])
+            parser.open()
+            chapters = parser.split_chapters()
+            for chapter in chapters:
+                title = chapter['title']
+                pdf_path = chapter['path']
+                pdf_file = files.DocumentFile(pdf_path)
+                pdf_node = nodes.DocumentNode(
+                    source_id="{} {}".format(book_title, title),
+                    title=title,
+                    author="INTO",
+                    tags = [
+                        "Teacher facing",
+                        "Professional development",
+                        "Life skills",
+                        "Intercultural skills",
+                        "Mentorship",
+                        "Formal contexts"
+                    ],
+                    files=[pdf_file],
+                    license=licenses.get_license(CHANNEL_LICENSE, "INTO", LICENSE_DESCRIPTION),
+                    copyright_holder="INTO"
+                )
+                topic_node.add_child(pdf_node)
 
         raise_for_invalid_channel(channel)  # Check for errors in channel construction
 
